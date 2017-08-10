@@ -12,6 +12,8 @@ namespace Solitaire
 
         void Awake()
         {
+            //creo un placeholder che avrà sempre la posizione in cima della lista delle carte della zone
+            //allo spostamento di una carta nella zona, verrà preso come riferimento il placeholder
             CreatePlaceholder();
         }
 
@@ -24,6 +26,7 @@ namespace Solitaire
             placeHolder = go;
         }
 
+        //funzione che imposta la nuova parent zone della carta rilasciata se è una carta valida
         public void OnDrop(PointerEventData eventData)
         {
             if (GameManager.singleton.hand.cards.Count > 1 && !this is ColumnZone)
@@ -42,12 +45,21 @@ namespace Solitaire
             }
         }
 
+        //metodo per la verifica che la carta inserita nella zona sia corretta
         public abstract bool CheckValidDrop(Card card, int position);
 
-        public virtual void AddCard(Card card) {
-            cards.Add(card);
+        //aggiunta di una carta all'inizio o alla fine della lista
+        public virtual void AddCard(Card card, bool top = true) {
+            if (top)
+            {
+                cards.Add(card);
+            }
+            else {
+                cards.Insert(0, card);
+            }
         }
 
+        //rimozione della carta dalla lista
         public virtual void RemoveCard(Card card) {
             cards.Remove(card);
         }

@@ -9,6 +9,7 @@ namespace Solitaire{
         Transform placeholder;
         public int startingCards;
 
+        //è possibile posizionarci una carta solo se segue l'ordine crescente ed ha un seme di colore diverso
         public override bool CheckValidDrop(Card card, int position)
         {
             if (cards.Count > 0)
@@ -30,14 +31,6 @@ namespace Solitaire{
             }
 
             return true;
-        }
-
-        public void FlipLastCard() {
-            if (cards.Count > 0) {
-                Card card = cards[cards.Count - 1];
-                if (!card.frontSide)
-                    card.SetSide(true, true);
-            }
         }
 
     }

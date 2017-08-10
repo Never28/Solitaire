@@ -6,6 +6,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 
 namespace Solitaire {
+    //Classe per il salvataggio e il caricamento dei dati
     public class Serializer : MonoBehaviour
     {
         string directoryName = "Data";

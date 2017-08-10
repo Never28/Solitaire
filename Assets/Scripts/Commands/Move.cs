@@ -8,23 +8,26 @@ namespace Solitaire{
         List<Card> cards = new List<Card>();
         Zone fromZone;
         Zone toZone;
+        bool top;
         bool animation;
         bool countMove;
         bool running;
 
         int score = 0;
 
-        public Move(Card card, Zone fromZone, Zone toZone, bool animation, bool countMove) {
+        public Move(Card card, Zone fromZone, Zone toZone, bool top, bool animation, bool countMove) {
             this.cards.Add(card);
             this.fromZone = fromZone;
             this.toZone = toZone;
+            this.top = top;
             this.animation = animation;
             this.countMove = countMove;
         }
-        public Move(List<Card> cards, Zone fromZone, Zone toZone, bool animation, bool countMove) {
+        public Move(List<Card> cards, Zone fromZone, Zone toZone, bool top, bool animation, bool countMove) {
             this.cards = cards;
             this.fromZone = fromZone;
             this.toZone = toZone;
+            this.top = top;
             this.animation = animation;
             this.countMove = countMove;
         }
@@ -65,6 +68,9 @@ namespace Solitaire{
 
             Vector3 startingPosition = GameManager.singleton.hand.transform.position;
             Vector3 endingPosition = placeholder.position;
+            if (!top && toZone.cards.Count > 0)
+                endingPosition = toZone.cards[0].transform.position;
+
             //Animazione di transizione della carta dalla posizione attuale al placeholder della Zona parent
             if (animation)
             {
@@ -92,21 +98,10 @@ namespace Solitaire{
                 card.transform.localPosition = Vector3.zero;
                 card.transform.localScale = Vector3.one;
                 //Riposizione la carta alla posizione corretta dei figli
-                int index = placeholder.GetSiblingIndex();
+                int index = (top) ? placeholder.GetSiblingIndex() : 0;
                 card.transform.SetSiblingIndex(index);
                 //Aggiunto la carta alla lista della Parent Zone
-                card.parentZone.AddCard(card);
-                //Aggiornamento della Zona da cui proviene la carta
-                if (card.prevZone is ColumnZone)
-                {
-                    ColumnZone zone = (ColumnZone)card.prevZone;
-                    //zone.FlipLastCard();
-                }
-                if (card.prevZone is DrawZone)
-                {
-                    DrawZone zone = (DrawZone)card.prevZone;
-                    zone.AddCardFromDiscardZone();
-                }
+                card.parentZone.AddCard(card, top);
             }
         }
 
@@ -116,7 +111,6 @@ namespace Solitaire{
             {
                 if (toZone is SuitZone)                                    
                     return 5;
-
             }
             else {
                 if (fromZone is DrawZone && toZone is DeckZone)

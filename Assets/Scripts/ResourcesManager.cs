@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace Solitaire {
+    //Classe che contiene le immagini delle carte associate dinamicamente
     public class ResourcesManager : MonoBehaviour
     {
         public GameObject cardPrefab;

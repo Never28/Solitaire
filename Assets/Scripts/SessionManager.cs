@@ -2,13 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace Solitaire {
+    //Classe che gestisce i dati di sessione e il caricamento delle scene
     public class SessionManager : MonoBehaviour
     {
 
         public Options options;
         public bool newGame;
+        public Transform uiOptions;
 
         public static SessionManager singleton;
         void Awake()
@@ -20,17 +23,18 @@ namespace Solitaire {
         // Use this for initialization
         void Start()
         {
+            //carico le opzioni, se non le trovo utilizzo quelle di default
             options = Serializer.singleton.LoadOptions();
             if (options == null)
             {
                 options = new Options();
                 Serializer.singleton.SaveOptions(options);
             }
-
+            //caricamento delle scene per far avviare il gioco
             StartCoroutine("StartGame");
         }
 
-        void SaveOptions() {
+        public void SaveOptions() {
             Serializer.singleton.SaveOptions(options);
         }
 
@@ -49,8 +53,10 @@ namespace Solitaire {
         }
 
         IEnumerator StartGame() {
+            //carica la scena che contiene risorse comuni
             yield return LoadResources();
-            yield return new WaitForSeconds(0.4f);
+            yield return new WaitForSeconds(0.2f);
+            //carica il menu principale
             yield return LoadMainMenu();
         }
 
@@ -67,14 +73,14 @@ namespace Solitaire {
             //ResourcesManager.singleton.ResetResources();
             //yield return LoadLevelDependencies();
             yield return LoadLoadingScene();
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(0.1f);
             yield return SceneManager.LoadSceneAsync("Game", LoadSceneMode.Additive);
             SceneManager.UnloadSceneAsync("Loading");
         }
 
         IEnumerator LoadLoadingScene()
         {
-            yield return SceneManager.LoadSceneAsync("Loading", LoadSceneMode.Additive);
+            yield return SceneManager.LoadSceneAsync("Loading", LoadSceneMode.Single);
 
         }
     }

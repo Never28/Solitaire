@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace Solitaire {
+    //Classe contenente i metodi comuni
     public static class Statics
     {
         public enum Suit { hearts, clubs, diamonds, spades };

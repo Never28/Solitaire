@@ -13,6 +13,7 @@ namespace Solitaire {
             imageSuit.sprite = ResourcesManager.singleton.GetSuitSpriteFromSuit(suit);
         }
 
+        //è possibile spostare una carta solo se segue l'ordine crescente del numero ed ha lo stesso seme
         public override bool CheckValidDrop(Card card, int position)
         {
             if (card.suit != suit)

@@ -28,6 +28,10 @@ namespace Solitaire
 
         Quaternion targetRotation;
 
+        float lastClickTime = 0;
+        float doubleClickTime = 0.25f;
+
+        //inizializzo la carta con i valori e le immagini corrette
         public void Init(Statics.Suit suit, int number, bool frontSide)
         {
             this.suit = suit;
@@ -56,6 +60,7 @@ namespace Solitaire
             InitSprites();
         }
 
+        //a seconda dei valori, assegno le immagini corrette
         void InitSprites()
         {
             if (imageBigSuit) {
@@ -73,10 +78,7 @@ namespace Solitaire
             }
         }
 
-        public void AddToParentZone(bool animation = false, bool lastPosition = true) {
-            StartCoroutine(MoveToParentZone(animation));
-        }
-
+        //sposto la carta dalla zona attuale alla mano
         public void MoveCardToHand() {
             //Imposto la Zona precedente
             if (transform.parent)
@@ -94,62 +96,7 @@ namespace Solitaire
                 prevZone.RemoveCard(this);
         }
 
-        IEnumerator MoveToParentZone(bool animation, bool lastPosition = true)
-        {
-            //Se la carta è ancora in una Zona, la sposto nella Hand
-            if (transform.parent && transform.parent.GetComponent<Zone>())
-                MoveCardToHand();
-
-            Transform placeholder = parentZone.placeHolder.transform;
-
-            //Animazione di transizione della carta dalla posizione attuale al placeholder della Zona parent
-            if (animation && lastPosition) {
-                float progress = 0; //This float will serve as the 3rd parameter of the lerp function.
-                float increment = smoothness / transitionDuration; //The amount of change to apply.
-                Vector3 startingPosition = transform.position;
-                Vector3 offset = GameManager.singleton.hand.cards[0].transform.position - transform.position;
-                Vector3 endingPosition = placeholder.position + offset;
-                while (progress < 1)
-                {
-                    transform.position = Vector3.Lerp(startingPosition, endingPosition, progress);
-                    progress += increment;
-                    yield return new WaitForSeconds(smoothness);
-                }
-            }
-
-            //Rimuovo la carta dalla Hand
-            GameManager.singleton.hand.RemoveCard(this);
-
-            //Imposto la Parent Zone come parent della carta
-            transform.SetParent(parentZone.transform);
-            transform.localPosition = Vector3.zero;
-            transform.localScale = Vector3.one;
-            //Riposizione la carta alla posizione corretta dei figli
-            int index = (lastPosition) ? placeholder.GetSiblingIndex() : 0;
-            transform.SetSiblingIndex(index);
-            //Aggiunto la carta alla lista della Parent Zone
-            parentZone.AddCard(this);
-            //Aggiornamento della Zona da cui proviene la carta
-            if (prevZone is ColumnZone) {
-                ColumnZone zone = (ColumnZone)prevZone;
-                zone.FlipLastCard();
-            }
-            if (prevZone is DrawZone) {
-                DrawZone zone = (DrawZone)prevZone;
-                zone.AddCardFromDiscardZone();
-            }
-        }
-
-        public void RemoveFromParentZone() {
-            if(transform.parent)
-                prevZone = transform.parent.GetComponent<Zone>();
-            //GameManager.singleton.hand.transform.position = this.transform.position;
-            transform.SetParent(GameManager.singleton.hand.transform);
-            GameManager.singleton.hand.AddCard(this);
-            if(prevZone)
-                prevZone.RemoveCard(this);
-        }
-
+        //imposto il lato della carta
         public void SetSide(bool frontSide, bool animation = false) {
             this.frontSide = frontSide;
             front.SetActive(frontSide);
@@ -161,59 +108,23 @@ namespace Solitaire
             {
                 imageBackground.sprite = ResourcesManager.singleton.GetBackgroundSprite();
             }
-
-            //StartCoroutine(FlipSide(frontSide, animation));
-        }
-
-        IEnumerator FlipSide(bool frontSide, bool animation) {
-            Quaternion startingRotation = Quaternion.Euler(transform.localEulerAngles);
-            Quaternion endingRotation;
-            if (frontSide)
-            {
-                endingRotation = Quaternion.Euler(Vector3.zero);
-            }
-            else
-            {
-                endingRotation = Quaternion.Euler(transform.localEulerAngles.x, 180, transform.localEulerAngles.z);
-            }
-            if (animation)
-            {
-                float progress = 0; //This float will serve as the 3rd parameter of the lerp function.
-                float increment = smoothness / transitionDuration; //The amount of change to apply.
-                while (progress < 1)
-                {
-                    if (progress > 0.5) {
-                        this.frontSide = frontSide;
-                        front.SetActive(frontSide);
-                        if (frontSide)
-                        {
-                            imageBackground.sprite = ResourcesManager.singleton.GetFrontSprite();
-                        }
-                        else
-                        {
-                            imageBackground.sprite = ResourcesManager.singleton.GetBackgroundSprite();
-                        }
-                    }
-                    transform.localRotation = Quaternion.Slerp(startingRotation, endingRotation, progress);
-                    progress += increment;
-                    yield return new WaitForSeconds(smoothness);
-                }
-            }
-            transform.localRotation = endingRotation;
-
         }
 
         #region Drag Event
+        //Evento dell'inizio del drag
         public void OnBeginDrag(PointerEventData eventData)
         {
+            //controllo che la carta sia valida da trascinare
             if (CheckInteractable())
             {
+                //ricavo la carta e tutte quelle successive nella zona
                 GameManager.singleton.hand.drag = true;
                 List<Card> cardsDragged = new List<Card>();
                 for (int i = parentZone.cards.IndexOf(this); i < parentZone.cards.Count; i++)
                 {
                     cardsDragged.Add(parentZone.cards[i]);
                 }
+                //sposto le carte nella mano
                 foreach (Card card in cardsDragged)
                 {
                     int index = parentZone.cards.IndexOf(card);
@@ -226,12 +137,14 @@ namespace Solitaire
             }
         }
 
+        //muovo la mano in relazione al mouse
         public void OnDrag(PointerEventData eventData)
         {
             if (GameManager.singleton.hand.drag)
                 GameManager.singleton.hand.transform.position = eventData.position;
         }
 
+        //evento di fine drag
         public void OnEndDrag(PointerEventData eventData)
         {
             if (GameManager.singleton.hand.drag)
@@ -240,12 +153,13 @@ namespace Solitaire
                 CommandList commands = new CommandList();
                 foreach (Card card in cardsDragged)
                 {
-                    //card.AddToParentZone(!(prevZone == parentZone));
                     card.canvasGroup.blocksRaycasts = true;
                 }
                 bool newZone = prevZone != parentZone;
-                Move move = new Move(cardsDragged, prevZone, parentZone, newZone, newZone);
+                //comando di movimento delle carte da dove si trovano alla nuova zona impostata nel parent dall'evento di drop della zone
+                Move move = new Move(cardsDragged, prevZone, parentZone, true, newZone, newZone);
                 commands.AddCommand(move);
+                //se sto spostando da una colonna e l'ultima carta è coperta, la giro
                 if (newZone && prevZone is ColumnZone && prevZone.cards.Count > 0)
                 {
                     Card lastCard = prevZone.cards[prevZone.cards.Count - 1];
@@ -263,6 +177,7 @@ namespace Solitaire
 
         bool CheckInteractable()
         {
+            //la carta è interagibile solo se è l'ultima della zona o se si trova nelle colonne e tutte quelle successive rispettano l'ordine
             if (frontSide && parentZone.cards[parentZone.cards.Count - 1] == this) {
                 return true;
             }
@@ -272,7 +187,6 @@ namespace Solitaire
                 for (int i = index + 1; i < parentZone.cards.Count; i++)
                 {
                     valid = valid && parentZone.CheckValidDrop(parentZone.cards[i], i - 1);
-                    Debug.Log(valid);
                 }
                 return valid;
             }
@@ -284,24 +198,38 @@ namespace Solitaire
         #region Click Event
         public void OnPointerClick(PointerEventData eventData)
         {
-            //GameManager.singleton.hand.transform.position = eventData.position;
-            /*targetRotation = Quaternion.LookRotation(-transform.forward, Vector3.up);
-            flipping = true;*/
-            if (parentZone is DeckZone) {
-                /*if (!frontSide)
+
+            //se clicco una carta nel mazzo, la sposto nella zona di draw
+            if (parentZone is DeckZone && GameManager.singleton.drawZone.cards.Count <= 3) {
+                //a seconda dell'opzione draw3 pesco una o tre carte
+                int cardNumber = (SessionManager.singleton.options.draw3) ? 3 : 1;
+                if (cardNumber > GameManager.singleton.deckZone.cards.Count)
+                    cardNumber = GameManager.singleton.deckZone.cards.Count;
+
+                for (int i = 0; i < cardNumber; i++)
                 {
-                    SetSide(true, true);                
-                }*/
-                prevZone = parentZone;
-                parentZone = GameManager.singleton.drawZone;
-                //AddToParentZone(true);
-                Move move = new Move(this, prevZone, parentZone, true, true);
-                Flip flip = new Flip(this, true);
-                CommandList commands = new CommandList();
-                commands.AddCommand(move);
-                commands.AddCommand(flip);
-                GameManager.singleton.commandListQueue.Enqueue(commands);
+                    Card card = GameManager.singleton.deckZone.cards[(GameManager.singleton.deckZone.cards.Count - 1) - i];
+                    card.prevZone = card.parentZone;
+                    card.parentZone = GameManager.singleton.drawZone;
+                    //sposto la carta nella zona di draw
+                    Move move = new Move(card, card.prevZone, card.parentZone, true, true, true);
+                    //giro la carta
+                    Flip flip = new Flip(card, true);
+                    CommandList commands = new CommandList();
+                    commands.AddCommand(move);
+                    commands.AddCommand(flip);
+                    GameManager.singleton.commandListQueue.Enqueue(commands);      
+                }
+
             }
+            //se doppio click su una carta, la sposto automaticamente nella zona corretta
+            if (Time.time - lastClickTime < doubleClickTime)
+            {
+                if (parentZone.cards.IndexOf(this) == parentZone.cards.Count - 1) {
+                    GameManager.singleton.AutoMove(this);
+                }
+            }
+            lastClickTime = Time.time;
         }
         #endregion
     }

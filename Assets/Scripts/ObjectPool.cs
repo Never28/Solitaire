@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace Solitaire {
+    //classe contentene l'elenco delle carte create
     public class ObjectPool : MonoBehaviour
     {
 
